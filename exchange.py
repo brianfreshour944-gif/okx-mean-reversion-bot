@@ -1,4 +1,9 @@
-
+"""
+FILE: exchange.py
+FUNCTION: The Execution Layer.
+Wraps the CCXT library to communicate with the OKX API. 
+Handles fetching data, placing orders, and checking balances.
+"""
 import os
 import ccxt
 import logging
