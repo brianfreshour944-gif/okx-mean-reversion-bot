@@ -1,3 +1,9 @@
+"""
+FILE: main.py
+FUNCTION: The Orchestrator. 
+Coordinates the Engine, Exchange, and Database modules to 
+execute the trading strategy in a continuous loop.
+"""
 import time
 import logging
 from exchange import ExchangeManager
