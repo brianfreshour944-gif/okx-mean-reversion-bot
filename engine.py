@@ -1,3 +1,9 @@
+"""
+FILE: engine.py
+FUNCTION: The Analytical Brain.
+Contains purely mathematical logic, indicator calculations (ATR, EMA),
+and decision-making rules for the bot. No external API calls here.
+"""
 import pandas as pd
 
 class TradingEngine:
