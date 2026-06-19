@@ -1,3 +1,9 @@
+"""
+FILE: database.py
+FUNCTION: The Memory/Persistence Layer.
+Manages the PostgreSQL connection pool. Handles heartbeat status
+updates and logs trade history to the database.
+"""
 import os
 import logging
 import psycopg2
