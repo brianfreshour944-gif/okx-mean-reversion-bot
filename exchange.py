@@ -6,7 +6,6 @@ import os
 import ccxt
 import logging
 from utils import log_trade, push_heartbeat
-from exchange_okx import ExchangeManager
 
 class ExchangeManager:
     def __init__(self, bot_name="Grok_OKX_Apex"):
