@@ -25,8 +25,26 @@ class ExchangeManager:
     def fetch_ohlcv(self, symbol, timeframe, limit=50):
         return self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
 
-    def place_order(self, symbol, side, amount, params=None):
-        return self.exchange.create_order(symbol, 'market', side, amount, params=params)
+    def place_order_safe(symbol, side, qty, price):
+    try:
+        # ... (your existing logic to clean qty) ...
+        
+        # 1. Submit the order to the exchange
+        order = trading_client.submit_order(order_data)
+        
+        # 2. ONLY if that succeeds, log it to the dashboard
+        log_trade(
+            bot_name=BOT_NAME,
+            symbol=symbol,
+            side=side.value,
+            qty=float(qty),
+            entry_price=float(price),
+            order_id=order.id  # Pass this if your utils supports it
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Order failed: {e}")
+        return False
 
     def get_balance(self, asset):
         balance = self.exchange.fetch_balance()
