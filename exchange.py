@@ -1,8 +1,6 @@
 """
 FILE: exchange.py
 FUNCTION: The Execution Layer.
-Wraps the CCXT library to communicate with the OKX API. 
-Handles fetching data, placing orders, and checking balances.
 """
 import os
 import ccxt
@@ -10,7 +8,8 @@ import logging
 from utils import log_trade, push_heartbeat
 
 class ExchangeManager:
-    def __init__(self):
+    def __init__(self, bot_name="Grok_OKX_Apex"):
+        self.bot_name = bot_name
         self.exchange = ccxt.okx({
             'apiKey': os.getenv('OKX_API_KEY'),
             'secret': os.getenv('OKX_API_SECRET'),
@@ -19,33 +18,28 @@ class ExchangeManager:
             'options': {'defaultType': 'spot', 'x-simulated-trading': '1'}
         })
         self.exchange.set_sandbox_mode(True)
-        self.exchange.session.headers.update({'x-simulated-trading': '1'})
         self.exchange.load_markets()
 
-    def fetch_ohlcv(self, symbol, timeframe, limit=50):
-        return self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-
-    def place_order_safe(symbol, side, qty, price):
-    try:
-        # ... (your existing logic to clean qty) ...
+    def place_order(self, symbol, side, amount, price=None, params=None):
+        # 1. Execute the trade
+        order = self.exchange.create_order(symbol, 'market', side, amount, params=params)
         
-        # 1. Submit the order to the exchange
-        order = trading_client.submit_order(order_data)
-        
-        # 2. ONLY if that succeeds, log it to the dashboard
+        # 2. Log to dashboard automatically
         log_trade(
-            bot_name=BOT_NAME,
+            bot_name=self.bot_name,
             symbol=symbol,
-            side=side.value,
-            qty=float(qty),
-            entry_price=float(price),
-            order_id=order.id  # Pass this if your utils supports it
+            side=side, # 'buy' or 'sell'
+            qty=float(amount),
+            entry_price=float(price or 0.0), # Ensure your bot passes the current price
+            order_id=order.get('id')
         )
-        return True
-    except Exception as e:
-        logger.error(f"Order failed: {e}")
-        return False
+        return order
 
-    def get_balance(self, asset):
-        balance = self.exchange.fetch_balance()
-        return float(balance.get(asset, {}).get('free', 0.0))
+    def update_status(self, equity, buying_power, daily_pnl):
+        # Call this periodically from your main loop
+        push_heartbeat(
+            bot_name=self.bot_name,
+            equity=equity,
+            buying_power=buying_power,
+            daily_pnl=daily_pnl
+        )
