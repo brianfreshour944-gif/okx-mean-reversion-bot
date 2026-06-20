@@ -7,6 +7,7 @@ Handles fetching data, placing orders, and checking balances.
 import os
 import ccxt
 import logging
+from utils import log_trade, push_heartbeat
 
 class ExchangeManager:
     def __init__(self):
