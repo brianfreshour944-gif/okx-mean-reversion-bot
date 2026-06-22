@@ -1,11 +1,3 @@
-"""
-FILE: engine.py
-FUNCTION: The Analytical Brain.
-Contains purely mathematical logic, indicator calculations (ATR, EMA),
-and decision-making rules for the bot. No external API calls here.
-"""
-import pandas as pd
-
 class TradingEngine:
     @staticmethod
     def calculate_atr(ohlcv, period=14):
@@ -19,3 +11,27 @@ class TradingEngine:
     @staticmethod
     def get_ema(closes, period):
         return pd.Series(closes).ewm(span=period, adjust=False).mean().iloc[-1]
+
+    # 👇 THIS METHOD MUST BE INDENTED INSIDE THE CLASS
+    def check_signal(self, ohlcv, multiplier=1.5):
+        """
+        Mean reversion signal using EMA + ATR (Keltner Channel).
+        Returns 'BUY', 'SELL', or 'HOLD'.
+        """
+        if len(ohlcv) < 20:
+            return "HOLD"
+
+        closes = [c[4] for c in ohlcv]
+        ema = self.get_ema(closes, period=20)
+        atr = self.calculate_atr(ohlcv, period=14)
+        current_price = closes[-1]
+
+        upper = ema + atr * multiplier
+        lower = ema - atr * multiplier
+
+        if current_price <= lower:
+            return "BUY"
+        elif current_price >= upper:
+            return "SELL"
+        else:
+            return "HOLD"
