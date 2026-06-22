@@ -30,7 +30,12 @@ class GridBacktester:
 
         df = self.data.copy()
 
-        # --- Use numpy arrays only for center and final price ---
+        # --- get column indices ---
+        close_col = df.columns.get_loc('Close')
+        high_col = df.columns.get_loc('High')
+        low_col = df.columns.get_loc('Low')
+
+        # Use numpy arrays for center and last price
         closes = df['Close'].values
         center = float(np.mean(closes[:10]))
 
@@ -43,10 +48,10 @@ class GridBacktester:
         holdings = 0.0
         trades = []
 
-        # --- Use itertuples() for safe, fast iteration ---
-        for row in df.itertuples():
-            high = row.High   # This is a plain Python float
-            low = row.Low     # This is a plain Python float
+        # --- iterate using itertuples with no index and no named tuple ---
+        for row in df.itertuples(index=False, name=None):
+            high = row[high_col]  # float
+            low = row[low_col]    # float
 
             # BUY
             for level in buy_levels:
@@ -68,9 +73,9 @@ class GridBacktester:
                         print(f"SELL at {level:.2f}")
                         break
 
-        # Close remaining position at last price
+        # Close remaining position
         if holdings > 0:
-            last_price = float(closes[-1])  # safe extraction
+            last_price = float(closes[-1])
             cash += last_price * holdings
             trades.append({'type': 'SELL (close)', 'price': last_price, 'qty': holdings})
             holdings = 0
