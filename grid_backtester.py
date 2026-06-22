@@ -30,10 +30,9 @@ class GridBacktester:
 
         df = self.data.copy()
 
-        # --- Convert to list of rows for safe iteration ---
-        # Each row: [Open, High, Low, Close, Volume] (in that order)
+        # Convert to list of rows: [Open, High, Low, Close, Volume]
         data_rows = df.values.tolist()
-        closes = [row[3] for row in data_rows]  # Close is index 3
+        closes = [row[3] for row in data_rows]
 
         # Center price = average of first 10 closes
         center = float(np.mean(closes[:10]))
@@ -47,7 +46,6 @@ class GridBacktester:
         holdings = 0.0
         trades = []
 
-        # Iterate over rows (each row is a list: [Open, High, Low, Close, Volume])
         for row in data_rows:
             high = row[1]   # High
             low = row[2]    # Low
@@ -74,7 +72,7 @@ class GridBacktester:
 
         # Close remaining position at last price
         if holdings > 0:
-            last_price = closes[-1]   # already a float
+            last_price = closes[-1]
             cash += last_price * holdings
             trades.append({'type': 'SELL (close)', 'price': last_price, 'qty': holdings})
             holdings = 0
