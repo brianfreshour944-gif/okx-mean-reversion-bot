@@ -29,7 +29,9 @@ class GridBacktester:
             return {}
 
         df = self.data.copy()
-        center = df['Close'].iloc[:10].mean()
+
+        # --- FIX 1: Convert center to float to avoid Series formatting issue ---
+        center = float(df['Close'].iloc[:10].mean())
 
         buy_levels = [center * (1 - self.step_percent * i) for i in range(1, self.levels + 1)]
         sell_levels = [center * (1 + self.step_percent * i) for i in range(1, self.levels + 1)]
@@ -41,9 +43,11 @@ class GridBacktester:
         trades = []
 
         for idx, row in df.iterrows():
-            high = row['High']
-            low = row['Low']
+            # --- FIX 2: Convert high/low to float ---
+            high = float(row['High'])
+            low = float(row['Low'])
 
+            # BUY: check if price touched any buy level
             for level in buy_levels:
                 if low <= level and cash >= level * self.trade_size:
                     cash -= level * self.trade_size
@@ -52,6 +56,7 @@ class GridBacktester:
                     print(f"BUY at {level:.2f}")
                     break
 
+            # SELL: check if price touched any sell level
             if holdings > 0:
                 for level in sell_levels:
                     if high >= level:
@@ -62,8 +67,9 @@ class GridBacktester:
                         print(f"SELL at {level:.2f}")
                         break
 
+        # Close any remaining position at last price
         if holdings > 0:
-            last_price = df['Close'].iloc[-1]
+            last_price = float(df['Close'].iloc[-1])
             cash += last_price * holdings
             trades.append({'type': 'SELL (close)', 'price': last_price, 'qty': holdings})
             holdings = 0
@@ -71,6 +77,7 @@ class GridBacktester:
         net_profit = cash - self.capital
         total_trades = len([t for t in trades if t['type'] == 'SELL'])
 
+        # Win Rate
         buys = [t for t in trades if t['type'] == 'BUY']
         sells = [t for t in trades if t['type'] in ('SELL', 'SELL (close)')]
         profits = []
@@ -80,7 +87,7 @@ class GridBacktester:
 
         win_rate = (sum(1 for p in profits if p > 0) / len(profits) * 100) if profits else 0.0
 
-        # Sharpe
+        # --- FIX 3: Safe Sharpe calculation ---
         daily_returns = df['Close'].pct_change().dropna()
         sharpe = 0.0
         if not daily_returns.empty:
@@ -93,7 +100,7 @@ class GridBacktester:
             sharpe = sharpe.iloc[0]
         sharpe = float(sharpe)
 
-        # Max Drawdown
+        # --- FIX 4: Safe Max Drawdown ---
         cumulative = df['Close'].pct_change().cumsum().fillna(0)
         running_max = cumulative.expanding().max()
         denom = running_max.abs().replace(0, 1)
