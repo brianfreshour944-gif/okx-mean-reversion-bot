@@ -30,15 +30,10 @@ class GridBacktester:
 
         df = self.data.copy()
 
-        # --- Use numpy arrays to avoid pandas Series issues ---
-        highs = df['High'].values
-        lows = df['Low'].values
+        # --- Use numpy arrays only for center and final price ---
         closes = df['Close'].values
-
-        # Calculate center price (average of first 10 closes)
         center = float(np.mean(closes[:10]))
 
-        # Build grid levels
         buy_levels = [center * (1 - self.step_percent * i) for i in range(1, self.levels + 1)]
         sell_levels = [center * (1 + self.step_percent * i) for i in range(1, self.levels + 1)]
 
@@ -48,12 +43,12 @@ class GridBacktester:
         holdings = 0.0
         trades = []
 
-        # Iterate over each bar using index
-        for i in range(len(df)):
-            high = float(highs[i])
-            low = float(lows[i])
+        # --- Use itertuples() for safe, fast iteration ---
+        for row in df.itertuples():
+            high = row.High   # This is a plain Python float
+            low = row.Low     # This is a plain Python float
 
-            # BUY: check if price touched any buy level
+            # BUY
             for level in buy_levels:
                 if low <= level and cash >= level * self.trade_size:
                     cash -= level * self.trade_size
@@ -62,7 +57,7 @@ class GridBacktester:
                     print(f"BUY at {level:.2f}")
                     break
 
-            # SELL: check if price touched any sell level
+            # SELL
             if holdings > 0:
                 for level in sell_levels:
                     if high >= level:
@@ -73,9 +68,9 @@ class GridBacktester:
                         print(f"SELL at {level:.2f}")
                         break
 
-        # Close any remaining position at last price
+        # Close remaining position at last price
         if holdings > 0:
-            last_price = float(closes[-1])
+            last_price = float(closes[-1])  # safe extraction
             cash += last_price * holdings
             trades.append({'type': 'SELL (close)', 'price': last_price, 'qty': holdings})
             holdings = 0
