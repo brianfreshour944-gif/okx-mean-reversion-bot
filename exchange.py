@@ -8,8 +8,7 @@ import logging
 from utils import log_trade, push_heartbeat
 
 class ExchangeManager:
-    def __init__(self, bot_name="okx-mean-reversion-bot
-"):
+    def __init__(self, bot_name="okx-mean-reversion-bot"):
         self.bot_name = bot_name
         self.exchange = ccxt.okx({
             'apiKey': os.getenv('OKX_API_KEY'),
