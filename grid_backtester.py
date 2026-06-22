@@ -9,10 +9,10 @@ import yfinance as yf
 class GridBacktester:
     def __init__(self, symbol, levels=5, step_percent=3.0, capital=1000, trade_size=100):
         self.symbol = symbol
-        self.levels = levels
-        self.step_percent = step_percent / 100
-        self.capital = capital
-        self.trade_size = trade_size
+        self.levels = int(levels)
+        self.step_percent = float(step_percent) / 100.0
+        self.capital = float(capital)
+        self.trade_size = float(trade_size)
         self.data = None
 
     def fetch_data(self, start_date, end_date):
@@ -30,28 +30,30 @@ class GridBacktester:
 
         df = self.data.copy()
 
-        # --- FIX: Extract scalar properly ---
-        # Use .iloc[0] to get the first (and only) value from the Series
-        center = float(df['Close'].iloc[:10].mean().iloc[0])
+        # --- Use numpy arrays to avoid pandas Series issues ---
+        highs = df['High'].values
+        lows = df['Low'].values
+        closes = df['Close'].values
 
-        # Also ensure levels and step_percent are floats
-        levels = int(self.levels)  # levels should be int
-        step_pct = float(self.step_percent)
+        # Calculate center price (average of first 10 closes)
+        center = float(np.mean(closes[:10]))
 
-        buy_levels = [center * (1 - step_pct * i) for i in range(1, levels + 1)]
-        sell_levels = [center * (1 + step_pct * i) for i in range(1, levels + 1)]
+        # Build grid levels
+        buy_levels = [center * (1 - self.step_percent * i) for i in range(1, self.levels + 1)]
+        sell_levels = [center * (1 + self.step_percent * i) for i in range(1, self.levels + 1)]
 
-        print(f"🎯 Center: {center:.4f} | Levels: {levels} | Step: {step_pct*100:.1f}%")
+        print(f"🎯 Center: {center:.4f} | Levels: {self.levels} | Step: {self.step_percent*100:.1f}%")
 
         cash = self.capital
         holdings = 0.0
         trades = []
 
-        for idx, row in df.iterrows():
-            high = float(row['High'])
-            low = float(row['Low'])
+        # Iterate over each bar using index
+        for i in range(len(df)):
+            high = float(highs[i])
+            low = float(lows[i])
 
-            # BUY
+            # BUY: check if price touched any buy level
             for level in buy_levels:
                 if low <= level and cash >= level * self.trade_size:
                     cash -= level * self.trade_size
@@ -60,7 +62,7 @@ class GridBacktester:
                     print(f"BUY at {level:.2f}")
                     break
 
-            # SELL
+            # SELL: check if price touched any sell level
             if holdings > 0:
                 for level in sell_levels:
                     if high >= level:
@@ -71,9 +73,9 @@ class GridBacktester:
                         print(f"SELL at {level:.2f}")
                         break
 
-        # Close remaining position
+        # Close any remaining position at last price
         if holdings > 0:
-            last_price = float(df['Close'].iloc[-1])
+            last_price = float(closes[-1])
             cash += last_price * holdings
             trades.append({'type': 'SELL (close)', 'price': last_price, 'qty': holdings})
             holdings = 0
