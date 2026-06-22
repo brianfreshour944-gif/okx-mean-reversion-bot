@@ -4,7 +4,7 @@ FUNCTION: Runs grid backtests for OKX bots and saves results to DB.
 """
 from grid_backtester import GridBacktester
 from datetime import date
-import database as db  # Your bot's database.py
+import database as db  # Your bot's database.py (must have get_db_connection)
 
 def save_backtest_result(bot_name, strategy_name, start_date, end_date, results):
     try:
@@ -30,9 +30,10 @@ def save_backtest_result(bot_name, strategy_name, start_date, end_date, results)
         print(f"❌ Failed to insert for {bot_name}: {e}")
 
 def run_all_grid_backtests():
+    # Define your grid bots – adjust parameters to match your live bot configs
     bots = [
         {
-            "bot_name": "okx_grid_bot",      # Must match exactly what's in bot_status
+            "bot_name": "okx_grid_bot",
             "symbol": "DOGE-USD",
             "levels": 5,
             "step": 3.0,
