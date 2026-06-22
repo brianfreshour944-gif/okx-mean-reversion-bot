@@ -7,7 +7,7 @@ from datetime import date
 from database import DatabaseManager  # Uses your existing DatabaseManager class
 
 def save_backtest_result(bot_name, strategy_name, start_date, end_date, results):
-    db = DatabaseManager()
+    db = DatabaseManager()  # Instantiate the DB manager
     query = """
         INSERT INTO backtest_results 
         (bot_name, strategy_name, start_date, end_date, total_trades, net_profit, sharpe_ratio, max_drawdown_pct, win_rate)
