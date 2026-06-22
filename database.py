@@ -8,16 +8,14 @@ import os
 import logging
 import psycopg2
 from psycopg2 import pool
-from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()  <-- DELETED
 
 class DatabaseManager:
     def __init__(self):
-        # Coolify injects this environment variable automatically
+        # Now it ONLY uses the system environment variable (same as your other bots)
         self.db_url = os.getenv('DATABASE_URL')
         try:
-            # We initialize a pool of 1 to 5 connections
             self.pool = psycopg2.pool.SimpleConnectionPool(1, 5, self.db_url)
             logging.info("✅ Database connection pool initialized.")
         except Exception as e:
