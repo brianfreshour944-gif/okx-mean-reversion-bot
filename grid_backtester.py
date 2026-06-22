@@ -30,13 +30,12 @@ class GridBacktester:
 
         df = self.data.copy()
 
-        # --- get column indices ---
-        close_col = df.columns.get_loc('Close')
-        high_col = df.columns.get_loc('High')
-        low_col = df.columns.get_loc('Low')
+        # --- Convert to list of rows for safe iteration ---
+        # Each row: [Open, High, Low, Close, Volume] (in that order)
+        data_rows = df.values.tolist()
+        closes = [row[3] for row in data_rows]  # Close is index 3
 
-        # Use numpy arrays for center and last price
-        closes = df['Close'].values
+        # Center price = average of first 10 closes
         center = float(np.mean(closes[:10]))
 
         buy_levels = [center * (1 - self.step_percent * i) for i in range(1, self.levels + 1)]
@@ -48,10 +47,10 @@ class GridBacktester:
         holdings = 0.0
         trades = []
 
-        # --- iterate using itertuples with no index and no named tuple ---
-        for row in df.itertuples(index=False, name=None):
-            high = row[high_col]  # float
-            low = row[low_col]    # float
+        # Iterate over rows (each row is a list: [Open, High, Low, Close, Volume])
+        for row in data_rows:
+            high = row[1]   # High
+            low = row[2]    # Low
 
             # BUY
             for level in buy_levels:
@@ -73,9 +72,9 @@ class GridBacktester:
                         print(f"SELL at {level:.2f}")
                         break
 
-        # Close remaining position
+        # Close remaining position at last price
         if holdings > 0:
-            last_price = float(closes[-1])
+            last_price = closes[-1]   # already a float
             cash += last_price * holdings
             trades.append({'type': 'SELL (close)', 'price': last_price, 'qty': holdings})
             holdings = 0
