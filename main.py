@@ -23,7 +23,7 @@ def run():
     while True:
         try:
             # 1. Heartbeat
-            db.execute_query("INSERT INTO bot_status (bot_name, last_update, status) VALUES (%s, NOW(), 'RUNNING') ON CONFLICT (bot_name) DO UPDATE SET last_update = NOW()", ('SOL_BOT',))
+            db.execute_query("INSERT INTO bot_status (bot_name, last_update, status) VALUES (%s, NOW(), 'RUNNING') ON CONFLICT (bot_name) DO UPDATE SET last_update = NOW()", ('Grok_alpaca_Apex_v8.py',))
 
             # 2. Logic Example
             ohlcv = ex.fetch_ohlcv('SOL/USDT', '15m')
