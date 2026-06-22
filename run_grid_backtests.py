@@ -4,33 +4,33 @@ FUNCTION: Runs grid backtests for OKX bots and saves results to DB.
 """
 from grid_backtester import GridBacktester
 from datetime import date
-import database as db  # Your bot's database.py (must have get_db_connection)
+from database import DatabaseManager  # Uses your existing DatabaseManager class
 
 def save_backtest_result(bot_name, strategy_name, start_date, end_date, results):
+    db = DatabaseManager()
+    query = """
+        INSERT INTO backtest_results 
+        (bot_name, strategy_name, start_date, end_date, total_trades, net_profit, sharpe_ratio, max_drawdown_pct, win_rate)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    params = (
+        bot_name,
+        strategy_name,
+        start_date,
+        end_date,
+        results['total_trades'],
+        results['net_profit'],
+        round(results['sharpe'], 2),
+        round(results['max_drawdown_pct'], 2),
+        round(results['win_rate'], 2)
+    )
     try:
-        with db.get_db_connection() as conn, conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO backtest_results 
-                (bot_name, strategy_name, start_date, end_date, total_trades, net_profit, sharpe_ratio, max_drawdown_pct, win_rate)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                bot_name,
-                strategy_name,
-                start_date,
-                end_date,
-                results['total_trades'],
-                results['net_profit'],
-                round(results['sharpe'], 2),
-                round(results['max_drawdown_pct'], 2),
-                round(results['win_rate'], 2)
-            ))
-            conn.commit()
+        db.execute_query(query, params)
         print(f"✅ Inserted backtest for {bot_name}")
     except Exception as e:
         print(f"❌ Failed to insert for {bot_name}: {e}")
 
 def run_all_grid_backtests():
-    # Define your grid bots – adjust parameters to match your live bot configs
     bots = [
         {
             "bot_name": "okx_grid_bot",
