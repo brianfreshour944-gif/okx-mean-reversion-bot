@@ -1,3 +1,4 @@
+
 """
 FILE: database.py
 FUNCTION: The Memory/Persistence Layer.
@@ -78,6 +79,9 @@ class DatabaseManager:
                     """)
                     cur.execute("ALTER TABLE bot_status ADD COLUMN IF NOT EXISTS in_position BOOLEAN DEFAULT FALSE")
                     cur.execute("ALTER TABLE bot_status ADD COLUMN IF NOT EXISTS entry_price NUMERIC DEFAULT 0")
+                    cur.execute("ALTER TABLE bot_status ADD COLUMN IF NOT EXISTS starting_equity NUMERIC")
+                    cur.execute("ALTER TABLE bot_status ADD COLUMN IF NOT EXISTS live_equity NUMERIC")
+                    cur.execute("ALTER TABLE bot_status ADD COLUMN IF NOT EXISTS live_equity_updated_at TIMESTAMP")
                     cur.execute("""
                         CREATE TABLE IF NOT EXISTS trades (
                             id SERIAL PRIMARY KEY,
@@ -151,6 +155,31 @@ class DatabaseManager:
                         """, (bot_name, status))
         except Exception as e:
             logging.error(f"❌ [CRITICAL] update_status FAILED: {e}")
+        finally:
+            self.pool.putconn(conn)
+
+    def report_equity(self, bot_name, current_equity):
+        """
+        Reports this bot's real account equity to the dashboard.
+        starting_equity is set the first time a bot reports in and is
+        never overwritten afterward. live_equity and
+        live_equity_updated_at are overwritten on every call.
+        """
+        conn = self.pool.getconn()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO bot_status (bot_name, starting_equity, live_equity, live_equity_updated_at, last_update)
+                        VALUES (%s, %s, %s, NOW(), NOW())
+                        ON CONFLICT (bot_name) DO UPDATE
+                        SET live_equity = EXCLUDED.live_equity,
+                            live_equity_updated_at = NOW(),
+                            last_update = NOW(),
+                            starting_equity = COALESCE(bot_status.starting_equity, EXCLUDED.starting_equity)
+                    """, (bot_name, float(current_equity), float(current_equity)))
+        except Exception as e:
+            logging.error(f"❌ [CRITICAL] report_equity FAILED: {e}")
         finally:
             self.pool.putconn(conn)
 
