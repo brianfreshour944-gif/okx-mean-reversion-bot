@@ -41,6 +41,31 @@ class ExchangeManager:
             logging.error(f"❌ Failed to fetch balance: {e}")
             return 0.0
 
+    def get_total_equity(self):
+        """Returns this account's total equity in USD (cash + all held
+        positions, marked to market), using OKX's own totalEq figure
+        rather than summing per-currency balances ourselves.
+
+        NOTE: this account is in OKX sandbox/demo mode (see __init__) --
+        the number returned here is demo money, not real funds. The
+        dashboard's equity tracking labels this appropriately as long as
+        OKX_SANDBOX reporting stays consistent with how the dashboard
+        reads it."""
+        try:
+            balance = self.exchange.fetch_balance()
+            data = balance.get('info', {}).get('data', [])
+            if data and 'totalEq' in data[0] and data[0]['totalEq']:
+                return float(data[0]['totalEq'])
+            # Fallback: sum eqUsd across all currency details
+            total = 0.0
+            for d in data:
+                for detail in d.get('details', []):
+                    total += float(detail.get('eqUsd', 0) or 0)
+            return total
+        except Exception as e:
+            logging.error(f"❌ Failed to fetch total equity: {e}")
+            return 0.0
+
     # Required for order execution
     def place_order(self, db, symbol, side, amount, price=0.0, params=None):
         """
