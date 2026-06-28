@@ -1,3 +1,4 @@
+
 """
 FILE: main.py
 FUNCTION: The Orchestrator.
@@ -47,6 +48,14 @@ def run():
     in_position, entry_price = db.load_position_state(BOT_NAME)
     logging.info(f"Loaded position state -> in_position={in_position} entry_price={entry_price}")
 
+    try:
+        starting_equity = ex.get_total_equity()
+        db.report_equity(BOT_NAME, starting_equity)
+        logging.info(f"💰 Starting equity reported: ${starting_equity:.2f} "
+                     f"(OKX sandbox mode -- not real funds)")
+    except Exception as e:
+        logging.warning(f"⚠️ Could not report starting equity: {e}")
+
     while True:
         try:
             if db.check_status(BOT_NAME) == 'STOP':
@@ -91,6 +100,11 @@ def run():
                         logging.info("✅ Position closed.")
 
             ex.update_status(db, "RUNNING")
+
+            try:
+                db.report_equity(BOT_NAME, ex.get_total_equity())
+            except Exception as e:
+                logging.warning(f"⚠️ Could not report live equity: {e}")
 
         except Exception as e:
             logging.error(f"Main Loop Error: {e}")
