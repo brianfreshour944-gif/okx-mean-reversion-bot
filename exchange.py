@@ -16,11 +16,23 @@ import logging
 class ExchangeManager:
     def __init__(self, bot_name="okx-mean-reversion-bot"):
         self.bot_name = bot_name
+
+        # FIX: ccxt's default OKX hostname (www.okx.com) returns "API key
+        # doesn't exist" (error 50119) for some regions/accounts even with
+        # valid, freshly-created keys -- a known ccxt issue where the
+        # hostname it signs requests against doesn't match the regional
+        # endpoint OKX actually validates the key on. OKX's own web UI
+        # redirects to app.okx.com, and overriding ccxt's hostname to match
+        # resolves it (confirmed fix, same root cause hit in okx-grid-bot).
+        # Override via OKX_HOSTNAME if a different region/subdomain is needed.
+        hostname = os.getenv("OKX_HOSTNAME", "app.okx.com")
+
         self.exchange = ccxt.okx({
             'apiKey': os.getenv('OKX_API_KEY'),
             'secret': os.getenv('OKX_API_SECRET'),
             'password': os.getenv('OKX_PASSPHRASE'),
             'enableRateLimit': True,
+            'hostname': hostname,
             'options': {'defaultType': 'spot', 'x-simulated-trading': '1'}
         })
         self.exchange.set_sandbox_mode(True)
